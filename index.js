@@ -1,65 +1,39 @@
 const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
 const exphbs = require('express-handlebars');
 const fs = require('fs');
+const path = require('path');
 
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
+const PORT = 3000;
 
-// Configuración del motor de plantillas Handlebars
-app.engine('handlebars', exphbs());
+// Configurar handlebars
+app.engine('handlebars', exphbs({
+  defaultLayout: 'main',
+  layoutsDir: path.join(__dirname, 'views/layouts')
+}));
 app.set('view engine', 'handlebars');
+app.set('views', path.join(__dirname, 'views'));
 
-// Middleware para servir archivos estáticos
-app.use(express.static('public'));
+// Middleware para manejar datos JSON
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Ruta para la vista home
+// Ruta para la página principal
 app.get('/', (req, res) => {
-    const products = JSON.parse(fs.readFileSync('products.json'));
-    res.render('home', { products });
+  const products = JSON.parse(fs.readFileSync('products.json', 'utf-8'));
+  res.render('index', { products });
 });
 
-// Ruta para la vista de productos en tiempo real
-app.get('/realtimeproducts', (req, res) => {
-    const products = JSON.parse(fs.readFileSync('products.json'));
-    res.render('realTimeProducts', { products });
-});
-
-// Conexión de Socket.IO
-io.on('connection', (socket) => {
-    console.log('Socket connected');
-
-    // Emitir la lista de productos actual al cliente
-    const products = JSON.parse(fs.readFileSync('products.json'));
-    socket.emit('initialProducts', products);
-
-    // Manejar la creación de un nuevo producto
-    socket.on('newProduct', (newProduct) => {
-        products.push(newProduct);
-        fs.writeFileSync('products.json', JSON.stringify(products, null, 2));
-        io.emit('updatedProducts', products);
-    });
-
-    // Manejar la eliminación de un producto
-    socket.on('deleteProduct', (productId) => {
-        const index = products.findIndex(product => product.id === productId);
-        if (index !== -1) {
-            products.splice(index, 1);
-            fs.writeFileSync('products.json', JSON.stringify(products, null, 2));
-            io.emit('updatedProducts', products);
-        }
-    });
-
-    // Manejar la desconexión del cliente
-    socket.on('disconnect', () => {
-        console.log('Socket disconnected');
-    });
+// Ruta para eliminar un producto
+app.post('/delete/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  let products = JSON.parse(fs.readFileSync('products.json', 'utf-8'));
+  products = products.filter(product => product.id !== id);
+  fs.writeFileSync('products.json', JSON.stringify(products, null, 2));
+  res.redirect('/');
 });
 
 // Iniciar el servidor
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+app.listen(PORT, () => {
+  console.log(`Servidor iniciado en http://localhost:${PORT}`);
 });

@@ -1,0 +1,27 @@
+<h1>Lista de Productos</h1>
+<table border="1">
+  <tr>
+    <th>ID</th>
+    <th>Marca</th>
+    <th>Nombre</th>
+    <th>Precio</th>
+    <th>Color</th>
+    <th>Tamaño</th>
+    <th>Acciones</th>
+  </tr>
+  {{#each products}}
+  <tr>
+    <td>{{this.id}}</td>
+    <td>{{this.brand}}</td>
+    <td>{{this.name}}</td>
+    <td>{{this.price}}</td>
+    <td>{{this.color}}</td>
+    <td>{{this.size}}</td>
+    <td>
+      <form action="/delete/{{this.id}}" method="POST">
+        <button type="submit">Eliminar</button>
+      </form>
+    </td>
+  </tr>
+  {{/each}}
+</table>
